@@ -9,6 +9,6 @@ from HaikuRecognizer import haiku
 
 
 if __name__ == '__main__':
-    is_haiku = haiku(sys.argv[1:])
+    is_haiku = haiku(' '.join(sys.argv[1:]).split())
     if is_haiku is not False:
         print(is_haiku)
