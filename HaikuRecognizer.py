@@ -4,8 +4,8 @@ from typing import List, Any
 import nltk
 from nltk.corpus import cmudict
 from nltk.tokenize import SyllableTokenizer
-from WordSplitter import segment
-nltk.download('cmudict')
+import wordninja
+# nltk.download('cmudict')
 
 
 pro_dict = cmudict.dict()
@@ -61,30 +61,8 @@ def ssp_syl(word):
     return len(syllables)
 
 
-def sanitize_sentence(sentence: str, hashtags: bool = True) -> str:
-    if not sentence:
-        return ""
-    words = sentence.split()
-    i = 0
-    while i < len(words):
-        if words[i][0] == '#':
-            hashtag = words.pop(i)
-            if hashtags:
-                segments = segment(hashtag[1:])
-                words[i:i] = segments
-        parts = [part for part in re.split(r'[^\'\w]+', words[i]) if len(part) > 0]
-        words.pop(i)
-        words[i:i] = parts
-        if words[i].isdigit():
-            number = words.pop(i)
-            number_words = num2words(number)
-            words[i:i] = [word for word in re.split(r'[^\w]+', number_words)]
-        i += 1
-    return ' '.join(words)
-
-
 def find_line(words: List[str], line_syllable_num: int) -> Any:
-    curr_line = [words.pop()]
+    curr_line = [words.pop(0)]
     curr_line_possible_total_syllables = count_syllables(curr_line)
     while words and line_syllable_num not in curr_line_possible_total_syllables and \
             min(curr_line_possible_total_syllables) < line_syllable_num:
@@ -110,18 +88,43 @@ def get_haiku(words: List[str]) -> Any:
             return False
         full_haiku = ' '.join(first_line) + "\n" + ' '.join(second_line) + "\n" + ' '.join(third_line)
         return full_haiku
+    return False
 
 
-def haiku(words: List[str]) -> Any:
-    sentence = ' '.join(words).lower()
+def sanitize_sentence(sentence: str, hashtags: bool = True) -> str:
+    if not sentence:
+        return ""
+    words = sentence.split()
+    i = 0
+    while i < len(words):
+        if words[i][0] == '#':
+            hashtag = words.pop(i)
+            if hashtags:
+                segments = wordninja.split(hashtag[1:])
+                words[i:i] = segments
+        if i < len(words):  # continues only if there is more to parse
+            parts = [part for part in re.split(r'[^\'\w]+', words[i]) if len(part) > 0]
+            words.pop(i)
+            words[i:i] = parts
+            if words[i].isdigit():
+                number = words.pop(i)
+                number_words = num2words(number)
+                words[i:i] = [word for word in re.split(r'[^\w]+', number_words)]
+            i += 1
+    return ' '.join(words)
+
+
+def haiku(sentence: str) -> Any:
+    sentence = ' '.join(sentence.split()).lower()
     url_pattern = re.compile("(?P<url>https?://[^\s]+)")
     links = re.findall(url_pattern, sentence)
-    no_hashtag_sentence = sanitize_sentence(sentence, False)
-    sentence = sanitize_sentence(sentence)
-    possible_sentences = [url_pattern.sub("link", sentence), url_pattern.sub("u r l", sentence),
-                          url_pattern.sub("link", no_hashtag_sentence),
-                          url_pattern.sub("u r l", no_hashtag_sentence),
-                          url_pattern.sub("", no_hashtag_sentence)]
+    link_sentence = url_pattern.sub("link", sentence)
+    url_sentence = url_pattern.sub("u r l", sentence)
+    nolink_sentence = url_pattern.sub("", sentence)
+    possible_sentences = [sanitize_sentence(link_sentence), sanitize_sentence(url_sentence),
+                          sanitize_sentence(nolink_sentence), sanitize_sentence(link_sentence, False),
+                          sanitize_sentence(url_sentence, False), sanitize_sentence(nolink_sentence, False)]
+    print(possible_sentences)
     full_haiku = False
     while possible_sentences and full_haiku is False:
         sentence = possible_sentences.pop()
