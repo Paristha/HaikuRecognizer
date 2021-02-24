@@ -91,7 +91,7 @@ def get_haiku(words: List[str]) -> Any:
     return False
 
 
-def sanitize_sentence(sentence: str, hashtags: bool = True) -> str:
+def sanitize_sentence(sentence: str, keep_hashtags: bool = True) -> str:
     if not sentence:
         return ""
     words = sentence.split()
@@ -99,7 +99,7 @@ def sanitize_sentence(sentence: str, hashtags: bool = True) -> str:
     while i < len(words):
         if words[i][0] == '#':
             hashtag = words.pop(i)
-            if hashtags:
+            if keep_hashtags:
                 segments = wordninja.split(hashtag[1:])
                 words[i:i] = segments
         if i < len(words):  # continues only if there is more to parse
@@ -124,11 +124,12 @@ def haiku(sentence: str) -> Any:
     possible_sentences = [sanitize_sentence(link_sentence), sanitize_sentence(url_sentence),
                           sanitize_sentence(nolink_sentence), sanitize_sentence(link_sentence, False),
                           sanitize_sentence(url_sentence, False), sanitize_sentence(nolink_sentence, False)]
-    print(possible_sentences)
-    full_haiku = False
-    while possible_sentences and full_haiku is False:
+    full_haiku = ""
+    while possible_sentences and not full_haiku:
         sentence = possible_sentences.pop()
         words = sentence.split()
-        full_haiku = get_haiku(words)
+        answer = get_haiku(words)
+        if answer:
+            full_haiku = answer
 
     return full_haiku
